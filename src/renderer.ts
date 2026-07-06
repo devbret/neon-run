@@ -1,6 +1,6 @@
 import { type Color, hueRotate, ShapeBatch } from "./batch";
 import {
-  Game,
+  type Game,
   LASER_H,
   type Obstacle,
   PLAYER_H,
@@ -129,10 +129,16 @@ export class Renderer {
     this.ghosts.length = 0;
   }
 
-  render(game: Game, particles: Particles, time: number): void {
+  render(game: Game, particles: Particles, time: number, lookAhead = 0): void {
     if (this.w === 0) return;
     const gl = this.gl;
     const b = this.batch;
+
+    const run = game.state === "run";
+    const ext = run ? lookAhead : 0;
+    const scrollNow =
+      game.scroll +
+      (run ? game.speed : game.state === "menu" ? 1.6 : 0) * lookAhead;
 
     const pink = hueRotate(PINK, game.hue);
     const cyan = hueRotate(CYAN, game.hue);
@@ -143,7 +149,7 @@ export class Renderer {
 
     gl.useProgram(this.bg.prog);
     gl.uniform1f(this.bg.u.u_time, time);
-    gl.uniform1f(this.bg.u.u_scroll, game.scroll);
+    gl.uniform1f(this.bg.u.u_scroll, scrollNow);
     gl.uniform1f(this.bg.u.u_aspect, this.w / this.h);
     gl.uniform1f(this.bg.u.u_horizon, -VIEW_Y0 / VIEW_H);
     gl.uniform1f(this.bg.u.u_beat, game.beat);
@@ -166,14 +172,17 @@ export class Renderer {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    this.drawGround(game, vw, pink);
+    const xoff = -game.speed * ext;
+    const worldView = [sx, sy, view[2] + xoff * sx, view[3]] as const;
+    this.drawGround(game, vw - xoff, pink);
     for (const o of game.obstacles) this.drawObstacle(o, game, time, pink);
     this.drawOrbs(game, time);
-    if (game.state !== "dead") this.drawPlayer(game, time, cyan);
+    b.flush(worldView);
+    if (game.state !== "dead") this.drawPlayer(game, time, cyan, ext);
     b.flush(view);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-    this.drawGhosts(game, cyan);
+    this.drawGhosts(game, cyan, scrollNow);
     particles.draw(b);
     b.flush(view);
     gl.disable(gl.BLEND);
@@ -305,8 +314,15 @@ export class Renderer {
     }
   }
 
-  private drawPlayer(game: Game, time: number, cyan: Color): void {
+  private drawPlayer(game: Game, time: number, cyan: Color, ext: number): void {
     const p = game.player;
+    let py = p.y;
+    let angle = p.angle;
+    if (!p.grounded) {
+      py += p.vy * ext;
+      angle -= 5.5 * ext;
+      if (p.y >= 0 && py < 0) py = 0;
+    }
     let scaleX = 1 + p.squash * 0.9;
     let scaleY = 1 - p.squash;
     if (!p.grounded) {
@@ -316,17 +332,23 @@ export class Renderer {
     }
     const w = PLAYER_W * scaleX;
     const h = PLAYER_H * scaleY;
-    const cy = p.y + h / 2;
+    const cy = py + h / 2;
 
     if (game.state === "run") {
-      this.ghosts.push({ y: p.y, angle: p.angle, w, h, scroll: game.scroll });
+      this.ghosts.push({
+        y: py,
+        angle,
+        w,
+        h,
+        scroll: game.scroll + game.speed * ext,
+      });
       if (this.ghosts.length > 40) this.ghosts.shift();
     }
 
     if (game.invuln > 0 && Math.floor(time * 18) % 2 === 0) return;
 
-    this.batch.rquad(PLAYER_X, cy, w, h, p.angle, cyan);
-    this.batch.rquad(PLAYER_X, cy, w * 0.55, h * 0.55, p.angle, WHITE);
+    this.batch.rquad(PLAYER_X, cy, w, h, angle, cyan);
+    this.batch.rquad(PLAYER_X, cy, w * 0.55, h * 0.55, angle, WHITE);
 
     if (game.shield) {
       const ringA = time * 1.8;
@@ -345,14 +367,14 @@ export class Renderer {
     }
   }
 
-  private drawGhosts(game: Game, cyan: Color): void {
+  private drawGhosts(game: Game, cyan: Color, scrollNow: number): void {
     if (game.state !== "run") return;
     const n = this.ghosts.length;
     for (let k = 1; k <= 5; k++) {
       const idx = n - 1 - k * 3;
       if (idx < 0) break;
       const g = this.ghosts[idx];
-      const gx = PLAYER_X - (game.scroll - g.scroll);
+      const gx = PLAYER_X - (scrollNow - g.scroll);
       const alpha = 0.14 * (1 - k / 6);
       this.batch.rquad(gx, g.y + g.h / 2, g.w, g.h, g.angle, [
         cyan[0],

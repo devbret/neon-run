@@ -71,6 +71,19 @@ const NEAR_MISS_MARGIN = 0.45;
 const BIOME_LEN = 300;
 const BEST_KEY = "neon-run.best";
 
+const loadBest = (): number => {
+  try {
+    return Number(localStorage.getItem(BEST_KEY) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+};
+const saveBest = (v: number): void => {
+  try {
+    localStorage.setItem(BEST_KEY, String(v));
+  } catch {}
+};
+
 export class Game {
   state: GameState = "menu";
   time = 0;
@@ -78,7 +91,7 @@ export class Game {
   dist = 0;
   bonus = 0;
   scroll = 0;
-  best = Number(localStorage.getItem(BEST_KEY) ?? 0) || 0;
+  best = loadBest();
   combo = 1;
   shield = false;
   invuln = 0;
@@ -174,6 +187,7 @@ export class Game {
   dive(): void {
     if (this.state === "run" && !this.player.grounded) {
       this.player.vy = Math.min(this.player.vy, DIVE_V);
+      this.jumpBuf = 0;
       this.events.push("dive");
     }
   }
@@ -386,7 +400,7 @@ export class Game {
     this.events.push(kind);
     if (this.score > this.best) {
       this.best = this.score;
-      localStorage.setItem(BEST_KEY, String(this.best));
+      saveBest(this.best);
     }
   }
 

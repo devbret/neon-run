@@ -71,7 +71,7 @@ export class Particles {
         continue;
       }
       if (p.drag !== 1) {
-        const k = Math.pow(p.drag, dt);
+        const k = p.drag ** dt;
         p.vx *= k;
         p.vy *= k;
       }
