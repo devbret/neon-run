@@ -11,7 +11,7 @@ const CHORDS = [
 ];
 const ARP_SEQ = [0, 1, 2, 3, 2, 1];
 
-const freq = (midi: number): number => 440 * Math.pow(2, (midi - 69) / 12);
+const freq = (midi: number): number => 440 * 2 ** ((midi - 69) / 12);
 
 export class AudioEngine {
   muted = false;
@@ -69,7 +69,7 @@ export class AudioEngine {
   }
 
   beat(fallbackTime: number): number {
-    if (!this.ctx || this.ctx.state !== "running") return fallbackTime / SPB;
+    if (this.ctx?.state !== "running") return fallbackTime / SPB;
     return Math.max(0, (this.ctx.currentTime - this.musicStart) / SPB);
   }
 
@@ -260,7 +260,7 @@ export class AudioEngine {
   }
 
   orb(combo: number): void {
-    const f = 700 * Math.pow(1.09, Math.min(combo, 10));
+    const f = 700 * 1.09 ** Math.min(combo, 10);
     this.blip(f, f * 1.5, 0.09, "triangle", 0.14);
   }
 

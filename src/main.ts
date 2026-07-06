@@ -9,11 +9,13 @@ const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
 if (!gl) throw new Error("WebGL2 is not supported by this browser");
 
 const game = new Game();
-const renderer = new Renderer(gl);
+let renderer = new Renderer(gl);
 const particles = new Particles();
 const audio = new AudioEngine();
 
-(window as unknown as Record<string, unknown>).game = game;
+if (import.meta.env.DEV) {
+  (window as unknown as Record<string, unknown>).game = game;
+}
 
 const scoreEl = document.getElementById("score")!;
 const bestEl = document.getElementById("best")!;
@@ -60,7 +62,7 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (e.code === "KeyM") {
-    toast(audio.toggleMute() ? "MUTED" : "SOUND ON");
+    toast(audio.toggleMute() ? "muted" : "sound on");
     return;
   }
   if (game.paused) return;
@@ -78,14 +80,53 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => {
   if (JUMP_KEYS.has(e.code)) game.jumpRelease();
 });
-window.addEventListener("pointerdown", () => {
-  if (game.paused) return;
+const SWIPE_DIST = 30;
+const SWIPE_TIME = 250;
+let swipe: { id: number; y0: number; t0: number; dived: boolean } | null = null;
+
+window.addEventListener("pointerdown", (e) => {
+  if (game.paused) {
+    setPaused(false);
+    return;
+  }
   audio.unlock();
+  swipe = {
+    id: e.pointerId,
+    y0: e.clientY,
+    t0: performance.now(),
+    dived: false,
+  };
   game.jumpPress();
 });
-window.addEventListener("pointerup", () => game.jumpRelease());
+window.addEventListener("pointermove", (e) => {
+  if (!swipe || e.pointerId !== swipe.id || swipe.dived) return;
+  if (performance.now() - swipe.t0 > SWIPE_TIME) return;
+  if (e.clientY - swipe.y0 > SWIPE_DIST) {
+    swipe.dived = true;
+    game.dive();
+  }
+});
+window.addEventListener("pointerup", (e) => {
+  if (swipe && e.pointerId === swipe.id) swipe = null;
+  game.jumpRelease();
+});
+window.addEventListener("pointercancel", () => {
+  swipe = null;
+});
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) setPaused(true);
+});
+
+let glLost = false;
+canvas.addEventListener("webglcontextlost", (e) => {
+  e.preventDefault();
+  glLost = true;
+  setPaused(true);
+});
+canvas.addEventListener("webglcontextrestored", () => {
+  renderer = new Renderer(gl);
+  renderer.resize(canvas.width, canvas.height);
+  glLost = false;
 });
 
 let trailAcc = 0;
@@ -232,17 +273,24 @@ function maybeShootingStar(dt: number): void {
 const playerCY = (): number => game.player.y + PLAYER_H / 2;
 const pad = (n: number): string => String(n).padStart(4, "0");
 
+const SIM_STEP = 1 / 120;
+const MAX_FRAME = 0.1;
+let acc = 0;
 let last = performance.now();
 function frame(now: number): void {
-  const dt = Math.min(0.05, (now - last) / 1000);
+  const dt = Math.min(MAX_FRAME, (now - last) / 1000);
   last = now;
   const time = now / 1000;
   requestAnimationFrame(frame);
-  if (game.paused) return;
+  if (game.paused || glLost) return;
 
   game.spawnX = renderer.viewW + 2;
   game.beat = audio.beat(game.time);
-  game.update(dt);
+  acc += dt;
+  while (acc >= SIM_STEP) {
+    game.update(SIM_STEP);
+    acc -= SIM_STEP;
+  }
 
   for (const ev of game.events) {
     switch (ev) {
@@ -288,10 +336,10 @@ function frame(now: number): void {
         toast(`${game.score - (game.score % 500)}`);
         break;
       case "biome":
-        toast(`SECTOR ${game.biome + 1}`);
+        toast(`sector ${game.biome + 1}`);
         break;
       case "newbest":
-        toast("NEW BEST");
+        toast("new best");
         break;
       case "death":
       case "fall":
@@ -300,8 +348,8 @@ function frame(now: number): void {
         burst(PLAYER_X, Math.max(playerCY(), -0.5), 80, 0.6);
         renderer.addRipple(PLAYER_X, Math.max(playerCY(), 0), 0.9, time);
         deadTitleEl.textContent =
-          ev === "fall" ? "LOST IN THE VOID" : "WRECKED";
-        finalEl.textContent = `${game.score} PTS · ${Math.floor(game.dist)} M`;
+          ev === "fall" ? "lost in the void" : "wrecked";
+        finalEl.textContent = `${game.score} pts · ${Math.floor(game.dist)} m`;
         break;
     }
   }
@@ -313,11 +361,11 @@ function frame(now: number): void {
   }
   maybeShootingStar(dt);
   particles.update(dt);
-  renderer.render(game, particles, time);
+  renderer.render(game, particles, time, acc);
 
   scoreEl.textContent = pad(game.score);
-  bestEl.textContent = `BEST ${pad(game.best)}`;
-  comboEl.textContent = game.combo > 1 ? `COMBO ×${game.combo}` : "";
+  bestEl.textContent = `best ${pad(game.best)}`;
+  comboEl.textContent = game.combo > 1 ? `combo ×${game.combo}` : "";
   shieldEl.style.visibility = game.shield ? "visible" : "hidden";
   menuEl.style.display = game.state === "menu" ? "" : "none";
   deadEl.style.display = game.state === "dead" ? "" : "none";
