@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Run</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌆</text></svg>"
+    />
+    <link rel="stylesheet" href="/src/main.css" />
+  </head>
+  <body>
+    <canvas id="glcanvas"></canvas>
+    <div id="hud">
+      <div>
+        <div id="score">0000</div>
+        <div id="combo"></div>
+      </div>
+      <div id="hud-right">
+        <div id="best">best 0000</div>
+        <div id="shield-ind">&#9672; shield</div>
+      </div>
+    </div>
+    <div id="menu">
+      <h1>Neon Run</h1>
+      <p class="sub">space / click = jump - &darr; = dive</p>
+      <p class="sub">
+        grab orbs - chain combos - shave close for bonuses - lasers fire on the
+        beat
+      </p>
+      <p class="blink">press space to run</p>
+    </div>
+    <div id="dead" style="display: none">
+      <h1 id="dead-title">wrecked</h1>
+      <p class="sub" id="final">0 pts &middot; 0 M</p>
+      <p class="blink">space to retry</p>
+    </div>
+    <div id="paused" style="display: none">
+      <h1>pause</h1>
+      <p class="blink">esc to resume</p>
+    </div>
+    <div id="toast"></div>
+    <div id="hint">m mute - esc pause</div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,159 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: #060010;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+#hud,
+#menu,
+#dead,
+#paused,
+#toast,
+#hint {
+  position: fixed;
+  font-family: "Courier New", monospace;
+  user-select: none;
+  pointer-events: none;
+}
+#hud {
+  top: 16px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 28px;
+}
+#score {
+  font-size: 34px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #aff;
+  text-shadow:
+    0 0 8px #0ff,
+    0 0 24px #0ff;
+}
+#combo {
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: #fd6;
+  margin-top: 4px;
+  text-shadow:
+    0 0 10px #fa0,
+    0 0 22px #fa0;
+}
+#hud-right {
+  text-align: right;
+}
+#best {
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: #f9d;
+  text-shadow:
+    0 0 8px #f0a,
+    0 0 20px #f0a;
+}
+#shield-ind {
+  font-size: 15px;
+  letter-spacing: 3px;
+  color: #8fa;
+  margin-top: 6px;
+  visibility: hidden;
+  text-shadow:
+    0 0 10px #0f6,
+    0 0 22px #0f6;
+}
+#menu,
+#dead,
+#paused {
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+h1 {
+  font-size: clamp(40px, 9vw, 96px);
+  letter-spacing: 12px;
+  color: #fef;
+  text-shadow:
+    0 0 10px #f0f,
+    0 0 40px #f0f,
+    0 0 80px #80f;
+}
+#dead h1 {
+  color: #fdd;
+  text-shadow:
+    0 0 10px #f04,
+    0 0 40px #f04;
+}
+#paused h1 {
+  color: #dff;
+  text-shadow:
+    0 0 10px #0af,
+    0 0 40px #0af;
+}
+.sub {
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #8df;
+  text-shadow: 0 0 10px #08f;
+}
+.blink {
+  font-size: 20px;
+  letter-spacing: 3px;
+  color: #ff8;
+  text-shadow: 0 0 12px #fa0;
+  animation: blink 1.1s step-end infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+#toast {
+  top: 18%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 30px;
+  font-weight: bold;
+  letter-spacing: 8px;
+  color: #ffd;
+  text-shadow:
+    0 0 12px #fa0,
+    0 0 36px #f60;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.3s,
+    transform 0.3s;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+#hint {
+  bottom: 12px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: #648;
+  opacity: 0.8;
+}
