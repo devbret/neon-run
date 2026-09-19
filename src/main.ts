@@ -114,7 +114,12 @@ window.addEventListener("pointercancel", () => {
   swipe = null;
 });
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) setPaused(true);
+  if (document.hidden) {
+    setPaused(true);
+    audio.suspend();
+  } else if (!game.paused) {
+    audio.resume();
+  }
 });
 
 let glLost = false;
